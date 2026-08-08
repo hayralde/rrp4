@@ -176,6 +176,7 @@ input[type="date"]:hover{border-color:var(--amber);}
 .btn-sm.green{border-color:var(--green); color:var(--green);}
 .btn-sm.green:hover{background:var(--green); color:#fff;}
 .assign-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+.field-row label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
 
 .empty-state{padding:34px 18px; text-align:center; color:var(--text-mute); font-size:13px;}
 
@@ -319,7 +320,7 @@ input[type="date"]:hover{border-color:var(--amber);}
             <b id="profile-name">—</b>
             <span id="profile-role">—</span>
           </div>
-          <button class="profile-logout" onclick="doLogout()" title="Sair">⏻</button>
+          <button class="profile-logout" onclick="doLogout()" title="Sair"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg></button>
         </div>
         <div class="version-tag mono" id="version-tag"></div>
       </div>
@@ -506,6 +507,7 @@ function doLogout(){
 const NAV_ADMIN = [
   {id:'overview', label:'Painel', icon:'▣'},
   {id:'tarefas', label:'Tarefas', icon:'☰'},
+  {id:'nova-atividade', label:'Nova atividade', icon:'✚'},
   {id:'equipe', label:'Equipe', icon:'◈'},
   {id:'escala', label:'Escala de folga', icon:'▦'}
 ];
@@ -558,6 +560,7 @@ function render(){
   if(session.type==='admin'){
     if(currentView==='overview') root.innerHTML = viewAdminOverview();
     else if(currentView==='tarefas') { root.innerHTML = viewAdminTarefas(); initTarefasSelects(); }
+    else if(currentView==='nova-atividade') root.innerHTML = viewAdminNovaAtividade();
     else if(currentView==='equipe') root.innerHTML = viewAdminEquipe();
     else if(currentView==='escala') root.innerHTML = viewAdminEscala();
   } else {
@@ -608,15 +611,15 @@ function viewAdminTarefas(){
       <div class="pb-head"><div><h3>Banco de tarefas (a distribuir)</h3><p>${pendentes.length} OS aguardando atribuição</p></div></div>
       <div class="pb-body">
         <table>
-          <thead><tr><th style="width:70px">OS</th><th>Descrição</th><th style="width:150px">Programada p/</th><th style="width:150px">Prazo final</th><th style="width:170px">Responsável</th><th style="width:90px"></th></tr></thead>
+          <thead><tr><th style="width:70px">OS</th><th>Descrição</th><th style="width:140px">Programada p/</th><th style="width:130px">Prazo (previsto)</th><th style="width:170px">Responsável</th><th style="width:90px"></th></tr></thead>
           <tbody>
           ${pendentes.length===0 ? `<tr><td colspan="6"><div class="empty-state">Todas as tarefas já foram distribuídas.</div></td></tr>` :
           pendentes.map(t=>`
             <tr>
               <td class="os-tag">${t.os ? '#'+t.os : '—'}</td>
               <td class="desc-cell">${t.descricao}</td>
-              <td><input type="date" class="mini-input" id="sched-${t.id}" min="${hojeISO}" value="${hojeISO}" onchange="onSchedChange(${t.id})" onclick="openPicker(this)"></td>
-              <td><input type="date" class="mini-input" id="due-${t.id}" min="${hojeISO}" value="${addDays(hojeISO,3)}" onclick="openPicker(this)"></td>
+              <td><input type="date" class="mini-input" id="sched-${t.id}" min="${hojeISO}" value="${addDays(hojeISO,1)}" onchange="onSchedChange(${t.id})" onclick="openPicker(this)"></td>
+              <td class="mono" id="due-preview-${t.id}" style="color:var(--text-dim); font-size:12px;">${fmtDate(addDays(hojeISO,3))}</td>
               <td><select class="mini-select" id="colab-${t.id}" style="width:100%"></select></td>
               <td><button class="btn-sm" onclick="assignTask(${t.id})">Atribuir</button></td>
             </tr>`).join('')}
@@ -666,27 +669,69 @@ function refreshColabOptions(taskId){
 }
 function onSchedChange(taskId){
   const sched = document.getElementById('sched-'+taskId).value;
-  const dueInput = document.getElementById('due-'+taskId);
-  dueInput.min = sched;
-  if(dueInput.value < sched) dueInput.value = sched;
+  const duePreview = document.getElementById('due-preview-'+taskId);
+  if(duePreview) duePreview.textContent = fmtDate(addDays(sched,2));
   refreshColabOptions(taskId);
 }
 async function assignTask(taskId){
   const sched = document.getElementById('sched-'+taskId).value;
-  const due = document.getElementById('due-'+taskId).value;
   const mat = document.getElementById('colab-'+taskId).value;
   if(!sched){ toast('Escolha a data de programação.', false); return; }
-  if(!due){ toast('Escolha o prazo final.', false); return; }
-  if(due < sched){ toast('O prazo final não pode ser antes da data de programação.', false); return; }
   if(!mat){ toast('Escolha um colaborador.', false); return; }
   try{
-    await apiPost(`/api/tasks/${taskId}/assign`, {
-      matricula: mat, scheduledDate: sched, dueDate: due, adminPassword: session.password
+    const result = await apiPost(`/api/tasks/${taskId}/assign`, {
+      matricula: mat, scheduledDate: sched, adminPassword: session.password
     });
-    toast('Tarefa atribuída a '+firstName(userByMat(mat).nome)+'.', true);
+    const nome = firstName(userByMat(mat).nome);
+    if(result.scheduledDate !== sched){
+      toast(`${nome} já tem 2 tarefas nesse período — reagendada para ${fmtDate(result.scheduledDate)} (prazo ${fmtDate(result.dueDate)})`, true);
+    } else {
+      toast(`Tarefa atribuída a ${nome} — prazo ${fmtDate(result.dueDate)}`, true);
+    }
     await refreshAndRender();
   } catch(e){
     toast(e.message || 'Não foi possível atribuir a tarefa.', false);
+  }
+}
+
+/* ---------- ADMIN: NOVA ATIVIDADE ---------- */
+function viewAdminNovaAtividade(){
+  return `
+    <div class="topbar"><h2>Nova atividade</h2><span class="badge-today mono">Hoje: ${fmtToday()}</span></div>
+    <div class="panel-box">
+      <div class="pb-head"><div><h3>Cadastrar nova OS / atividade</h3><p>Assim que salva, ela já entra no banco de tarefas a distribuir.</p></div></div>
+      <div class="pb-body" style="padding:20px 22px;">
+        <div class="field-row">
+          <label>Número da OS/SS <span style="text-transform:none; font-weight:400; color:var(--text-mute);">(opcional)</span></label>
+          <input type="text" inputmode="numeric" id="nova-os" class="mini-input" style="width:180px;" placeholder="Ex: 2050">
+        </div>
+        <div class="field-row" style="margin-top:16px;">
+          <label>Descrição da atividade</label>
+          <textarea id="nova-desc" class="mini-input" style="width:100%; max-width:640px; min-height:96px; font-family:'Inter',sans-serif; resize:vertical;" placeholder="Descreva a atividade a ser feita..."></textarea>
+        </div>
+        <div style="margin-top:18px;">
+          <button class="btn-sm" onclick="criarAtividade()">+ Adicionar à lista de tarefas</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+async function criarAtividade(){
+  const osInput = document.getElementById('nova-os');
+  const descInput = document.getElementById('nova-desc');
+  const osVal = osInput.value.trim();
+  const descVal = descInput.value.trim();
+  if(!descVal){ toast('Descreva a atividade antes de salvar.', false); return; }
+  const osNum = osVal ? parseInt(osVal,10) : null;
+  if(osVal && Number.isNaN(osNum)){ toast('Número da OS/SS inválido — use só números.', false); return; }
+  try{
+    await apiPost('/api/tasks', { os: osNum, descricao: descVal, adminPassword: session.password });
+    toast('Atividade adicionada à lista de tarefas.', true);
+    osInput.value=''; descInput.value='';
+    await refreshAndRender();
+    goView('tarefas');
+  } catch(e){
+    toast(e.message || 'Não foi possível salvar a atividade.', false);
   }
 }
 
@@ -699,14 +744,13 @@ function viewAdminEquipe(){
       <div class="pb-head"><div><h3>Colaboradores</h3><p>${users.length} pessoas na equipe</p></div></div>
       <div class="pb-body">
         <table>
-          <thead><tr><th>Nome</th><th>Matrícula</th><th>Nível</th><th>Pontos</th><th>Concluídas</th><th>Atrasadas</th><th>Hoje</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Nível</th><th>Pontos</th><th>Concluídas</th><th>Atrasadas</th><th>Hoje</th></tr></thead>
           <tbody>
           ${ranked.map(u=>{
             const r = rankOf(u.pontos);
             const folgaHoje = isFolga(u.matricula, hojeISO);
             return `<tr>
               <td>${firstName(u.nome)}</td>
-              <td class="mono">${u.matricula}</td>
               <td><span class="status-pill" style="background:rgba(201,122,24,.14); color:var(--amber);">${r.label}</span></td>
               <td class="mono">${u.pontos}</td>
               <td class="mono">${u.concluidas}</td>
