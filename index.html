@@ -175,6 +175,8 @@ input[type="date"]:hover{border-color:var(--amber);}
 .btn-sm:disabled{opacity:.35; cursor:not-allowed; border-color:var(--border); color:var(--text-mute);}
 .btn-sm.green{border-color:var(--green); color:var(--green);}
 .btn-sm.green:hover{background:var(--green); color:#fff;}
+.btn-sm.red{border-color:var(--red); color:var(--red);}
+.btn-sm.red:hover{background:var(--red); color:#fff;}
 .assign-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
 .field-row label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
 
@@ -605,7 +607,13 @@ function viewAdminTarefas(){
   const pendentes = tasks.filter(t=>t.status==='pendente');
   const emAndamento = tasks.filter(t=>t.status!=='pendente');
   return `
-    <div class="topbar"><h2>Tarefas</h2><span class="badge-today mono">Hoje: ${fmtToday()}</span></div>
+    <div class="topbar">
+      <h2>Tarefas</h2>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="badge-today mono">Hoje: ${fmtToday()}</span>
+        <button class="btn-sm red" onclick="resetarDistribuicao()" title="Site em desenvolvimento: volta todas as tarefas para pendente e zera pontos">↺ Resetar distribuição</button>
+      </div>
+    </div>
 
     <div class="panel-box">
       <div class="pb-head"><div><h3>Banco de tarefas (a distribuir)</h3><p>${pendentes.length} OS aguardando atribuição</p></div></div>
@@ -691,6 +699,18 @@ async function assignTask(taskId){
     await refreshAndRender();
   } catch(e){
     toast(e.message || 'Não foi possível atribuir a tarefa.', false);
+  }
+}
+
+async function resetarDistribuicao(){
+  const ok = confirm('Isso vai voltar TODAS as tarefas para "pendente" (sem responsável, sem datas) e zerar os pontos/estatísticas de todos os colaboradores. Essa ação não pode ser desfeita. Confirma?');
+  if(!ok) return;
+  try{
+    await apiPost('/api/tasks/reset', { adminPassword: session.password });
+    toast('Distribuição resetada — todas as tarefas voltaram a pendente.', true);
+    await refreshAndRender();
+  } catch(e){
+    toast(e.message || 'Não foi possível resetar a distribuição.', false);
   }
 }
 
