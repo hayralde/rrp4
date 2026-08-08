@@ -237,6 +237,19 @@ input[type="date"]:hover{border-color:var(--amber);}
 
 .notice{background:var(--panel-alt); border:1px solid var(--border); border-left:3px solid var(--cyan); border-radius:6px; padding:12px 16px; font-size:12.5px; color:var(--text-dim); margin-bottom:20px; line-height:1.5;}
 
+.prog-banner{display:flex; align-items:center; justify-content:space-between; gap:16px; background:linear-gradient(120deg, var(--amber), #b8741c); color:#fff; border-radius:8px; padding:16px 20px; margin-bottom:20px; flex-wrap:wrap;}
+.prog-banner-brand{display:flex; align-items:center; gap:12px;}
+.prog-banner-brand .bolt{font-size:28px; line-height:1;}
+.prog-banner-brand b{display:block; font-size:15px; font-family:'Rajdhani',sans-serif; letter-spacing:.02em;}
+.prog-banner-brand span{display:block; font-size:12.5px; opacity:.92; margin-top:3px;}
+.prog-banner-nav{display:flex; align-items:center; gap:8px;}
+.prog-banner-nav .btn-sm{border-color:#fff; color:#fff; padding:7px 11px;}
+.prog-banner-nav .btn-sm:hover{background:#fff; color:var(--amber);}
+.prog-banner-nav input[type="date"]{background:#fff;}
+tr.turno-divider td{background:var(--panel-alt); font-weight:700; font-family:'Rajdhani',sans-serif; font-size:14px; letter-spacing:.04em; color:var(--amber); padding-top:10px; padding-bottom:10px; border-bottom:1px solid var(--border);}
+tr.checklist-row td{color:var(--text-dim);}
+tr.checklist-row .desc-cell{font-style:italic;}
+
 @media(max-width:820px){
   .sidebar{position:fixed; z-index:30; height:100%; width:240px; transform:translateX(-100%); transition:.2s; box-shadow:8px 0 24px rgba(28,38,43,.12);}
   .sidebar.open{transform:translateX(0);}
@@ -375,6 +388,8 @@ let hojeISO = null;       // data de hoje, segundo o servidor
 let session = null;       // {type:'admin', password} | {type:'colab', matricula}
 let currentView = "overview";
 let stateLoaded = false;
+let programacaoData = null; // 'YYYY-MM-DD' selecionada na aba Programação do dia
+const TURNOS = ['A','B','C'];
 
 /* =========================================================
    HELPERS
@@ -509,12 +524,14 @@ function doLogout(){
 const NAV_ADMIN = [
   {id:'overview', label:'Painel', icon:'▣'},
   {id:'tarefas', label:'Tarefas', icon:'☰'},
+  {id:'programacao', label:'Programação do dia', icon:'▤'},
   {id:'nova-atividade', label:'Nova atividade', icon:'✚'},
   {id:'equipe', label:'Equipe', icon:'◈'},
   {id:'escala', label:'Escala de folga', icon:'▦'}
 ];
 const NAV_COLAB = [
   {id:'minhas-tarefas', label:'Minhas tarefas', icon:'☰'},
+  {id:'programacao', label:'Programação do dia', icon:'▤'},
   {id:'desempenho', label:'Meu desempenho', icon:'◈'},
   {id:'ranking', label:'Ranking geral', icon:'▣'}
 ];
@@ -562,11 +579,13 @@ function render(){
   if(session.type==='admin'){
     if(currentView==='overview') root.innerHTML = viewAdminOverview();
     else if(currentView==='tarefas') { root.innerHTML = viewAdminTarefas(); initTarefasSelects(); }
+    else if(currentView==='programacao') root.innerHTML = viewProgramacaoDia();
     else if(currentView==='nova-atividade') root.innerHTML = viewAdminNovaAtividade();
     else if(currentView==='equipe') root.innerHTML = viewAdminEquipe();
     else if(currentView==='escala') root.innerHTML = viewAdminEscala();
   } else {
     if(currentView==='minhas-tarefas') root.innerHTML = viewColabTarefas();
+    else if(currentView==='programacao') root.innerHTML = viewProgramacaoDia();
     else if(currentView==='desempenho') root.innerHTML = viewColabDesempenho();
     else if(currentView==='ranking') root.innerHTML = viewColabRanking();
   }
@@ -712,6 +731,77 @@ async function resetarDistribuicao(){
   } catch(e){
     toast(e.message || 'Não foi possível resetar a distribuição.', false);
   }
+}
+
+/* ---------- PROGRAMAÇÃO DO DIA (admin e colaborador) ---------- */
+function setProgramacaoData(v){ programacaoData = v; render(); }
+function shiftProgramacaoDia(n){
+  if(!programacaoData) programacaoData = hojeISO;
+  programacaoData = addDays(programacaoData, n);
+  render();
+}
+function viewProgramacaoDia(){
+  if(!programacaoData) programacaoData = hojeISO;
+  const dataSel = programacaoData;
+  const tarefasDoDia = tasks.filter(t=>t.scheduledDate===dataSel);
+
+  let bodyRows = '';
+  TURNOS.forEach(turno=>{
+    const colabs = users.filter(u=>u.turno===turno);
+    if(colabs.length===0) return;
+    bodyRows += `<tr class="turno-divider"><td colspan="4">TURNO ${turno}</td></tr>`;
+    let anyRow = false;
+    colabs.forEach(u=>{
+      tarefasDoDia.filter(t=>t.matricula===u.matricula && !t.isChecklist).forEach(t=>{
+        anyRow = true;
+        bodyRows += `<tr>
+          <td>${firstName(u.nome)}</td>
+          <td class="os-tag">${t.os ? '#'+t.os : '—'}</td>
+          <td class="desc-cell">${t.descricao}</td>
+          <td class="mono">${fmtDate(t.dueDate)}</td>
+        </tr>`;
+      });
+    });
+    colabs.forEach(u=>{
+      const cl = tarefasDoDia.find(t=>t.matricula===u.matricula && t.isChecklist);
+      if(cl){
+        anyRow = true;
+        bodyRows += `<tr class="checklist-row">
+          <td>${firstName(u.nome)}</td>
+          <td class="os-tag">—</td>
+          <td class="desc-cell">${cl.descricao} <span class="status-pill status-${cl.status}">${statusLabel(cl.status)}</span></td>
+          <td class="mono">—</td>
+        </tr>`;
+      }
+    });
+    if(!anyRow){
+      bodyRows += `<tr><td colspan="4"><div class="empty-state">Nenhuma atividade registrada para esta data.</div></td></tr>`;
+    }
+  });
+
+  return `
+    <div class="topbar"><h2>Programação do dia</h2></div>
+    <div class="prog-banner">
+      <div class="prog-banner-brand">
+        <span class="bolt">⚡</span>
+        <div><b>Manutenção Elétrica, Instrumentação, Automação</b><span>Programação do dia ${fmtDate(dataSel)}</span></div>
+      </div>
+      <div class="prog-banner-nav">
+        <button class="btn-sm" onclick="shiftProgramacaoDia(-1)">‹</button>
+        <input type="date" class="mini-input" id="prog-date" value="${dataSel}" onchange="setProgramacaoData(this.value)" onclick="openPicker(this)">
+        <button class="btn-sm" onclick="shiftProgramacaoDia(1)">›</button>
+      </div>
+    </div>
+    <div class="panel-box">
+      <div class="pb-body">
+        <table>
+          <thead><tr><th style="width:170px">Turno / Colaborador</th><th style="width:70px">OS</th><th>Descrição</th><th style="width:130px">Prazo</th></tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="notice">O Check-list diário é gerado automaticamente para quem não está de folga — não depende de distribuição manual.</div>
+  `;
 }
 
 /* ---------- ADMIN: NOVA ATIVIDADE ---------- */
