@@ -1,0 +1,26 @@
+{
+  "name": "Elétrica — Painel de Tarefas",
+  "short_name": "Elétrica",
+  "description": "Painel de tarefas, escala e desempenho da equipe de manutenção elétrica.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F3F5F6",
+  "theme_color": "#C97A18",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
