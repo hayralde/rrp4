@@ -1061,12 +1061,15 @@ async function renderProgramacaoCanvas(dataSel){
   // encolhe abaixo disso quando o conteúdo do dia não precisa de tudo isso —
   // evita coluna DESCRIÇÃO larga e vazia em dias com poucas tarefas. Fonte
   // monoespaçada compacta e linhas enxutas, igual ao gerador Python de
-  // referência. Desenha em resolução maior (SUPERSAMPLE) e depois reamostra
-  // pra largura final, pra manter o texto nítido mesmo pequeno.
-  const SUPERSAMPLE = 3;
+  // referência. Desenha em resolução bem maior (SUPERSAMPLE) e depois reamostra
+  // pra um tamanho final EXPORT_SCALE vezes maior que a largura "lógica" —
+  // exporta em alta resolução (nítido em tela de retina / zoom) mantendo as
+  // mesmas proporções de layout.
+  const SUPERSAMPLE = 4;
+  const EXPORT_SCALE = 2;
   const MAX_W = 463, MIN_W = 320;
   const FONT_BODY = 9.5, LINE_H = 11.5, PAD_X = 4;
-  const ROW_LOGO1_H = 18, ROW_LOGO2_H = 13, ROW_HEADER_H = 15, ROW_DIVIDER_H = 15, ROW_MIN_H = 14;
+  const ROW_LOGO2_H = 13, ROW_HEADER_H = 15, ROW_DIVIDER_H = 15, ROW_MIN_H = 14;
   const BODY_FONT = "'IBM Plex Mono', monospace";
   const DISPLAY_FONT = "'Rajdhani', sans-serif";
 
@@ -1098,8 +1101,17 @@ async function renderProgramacaoCanvas(dataSel){
   const maxDescW = MAX_W - COL_W[0] - COL_W[1];
   const minDescW = Math.max(120, MIN_W - COL_W[0] - COL_W[1]);
   COL_W[2] = Math.max(minDescW, Math.min(maxDescW, Math.round(descNatural)));
+  COL_W[2] = Math.max(80, Math.round(COL_W[2] * 0.7)); // 30% mais estreita
 
   const W = COL_W[0] + COL_W[1] + COL_W[2];
+
+  // texto do banner institucional quebra em 2 linhas se a largura ficar
+  // curta demais (a coluna Descrição mais estreita reduz a imagem toda)
+  const bw = COL_W[1] + COL_W[2];
+  mctx.font = `7.6px ${BODY_FONT}`;
+  const bannerLines = wrapCanvasText(mctx, 'Manutenção Elétrica, Instrumentação, Automação', bw - 8);
+  mctx.font = `${FONT_BODY}px ${BODY_FONT}`;
+  const ROW_LOGO1_H = bannerLines.length > 1 ? 26 : 18;
 
   const drawRows = [];
   turnos.forEach(t=>{
@@ -1154,9 +1166,9 @@ async function renderProgramacaoCanvas(dataSel){
     {align:'center', color:IMG_COLORS.logoOrange, bold:true, size:11, font:DISPLAY_FONT, lineHeight:11.5});
   cellBorder(0,0,COL_W[0], ROW_LOGO1_H+ROW_LOGO2_H);
 
-  const bx = COL_W[0], bw = COL_W[1]+COL_W[2];
+  const bx = COL_W[0];
   fillRect(bx, 0, bw, ROW_LOGO1_H, IMG_COLORS.titleBand);
-  drawText('Manutenção Elétrica, Instrumentação, Automação', bx, 0, bw, ROW_LOGO1_H, {align:'center', size:7.6});
+  drawMultiline(bannerLines, bx, 0, bw, ROW_LOGO1_H, {align:'center', size:7.6, lineHeight:9});
   cellBorder(bx, 0, bw, ROW_LOGO1_H);
 
   fillRect(bx, ROW_LOGO1_H, bw, ROW_LOGO2_H, IMG_COLORS.titleBand);
@@ -1208,11 +1220,13 @@ async function renderProgramacaoCanvas(dataSel){
     y += h;
   });
 
-  // reamostra do canvas em alta resolução para a largura final fixa de 463px
+  // reamostra do canvas em altíssima resolução (SUPERSAMPLE) para o tamanho
+  // final em EXPORT_SCALE — arquivo com o dobro dos pixels do "tamanho lógico",
+  // nítido em tela de retina e no zoom, mesmas proporções de layout de antes
   // (equivalente ao render 300dpi -> crop -> resize LANCZOS do gerador Python)
   const final = document.createElement('canvas');
-  final.width = W;
-  final.height = Math.round(totalH);
+  final.width = Math.round(W*EXPORT_SCALE);
+  final.height = Math.round(totalH*EXPORT_SCALE);
   const fctx = final.getContext('2d');
   fctx.imageSmoothingEnabled = true;
   fctx.imageSmoothingQuality = 'high';
@@ -1224,8 +1238,8 @@ async function gerarImagemProgramacao(){
   const dataSel = programacaoData || hojeISO;
   try{
     const canvas = await renderProgramacaoCanvas(dataSel);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    abrirModalImagem(dataUrl, `programacao_${dataSel}.jpg`);
+    const dataUrl = canvas.toDataURL('image/png');
+    abrirModalImagem(dataUrl, `programacao_${dataSel}.png`);
   } catch(e){
     console.error(e);
     toast('Não foi possível gerar a imagem.', false);
