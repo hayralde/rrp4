@@ -251,6 +251,18 @@ input[type="date"]:hover{border-color:var(--amber);}
 .toast.neg{border-left:3px solid var(--red);}
 @keyframes slidein{from{transform:translateX(14px); opacity:0;} to{transform:translateX(0); opacity:1;}}
 
+.img-modal-backdrop{position:fixed; inset:0; background:rgba(28,38,43,.6); z-index:60; display:flex; align-items:center; justify-content:center; padding:20px;}
+.img-modal{background:var(--panel); border-radius:10px; max-width:480px; width:100%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.35);}
+.img-modal-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border);}
+.img-modal-head b{font-family:'Rajdhani',sans-serif; font-size:15px;}
+.img-modal-close{background:none; border:none; font-size:15px; color:var(--text-dim); cursor:pointer; width:30px; height:30px; border-radius:6px;}
+.img-modal-close:hover{background:var(--panel-alt); color:var(--red);}
+.img-modal-body{overflow:auto; padding:14px; text-align:center; background:var(--panel-alt);}
+.img-modal-body img{max-width:100%; height:auto; border:1px solid var(--border); border-radius:4px; display:block; margin:0 auto;}
+.img-modal-foot{padding:14px 16px; border-top:1px solid var(--border);}
+.img-modal-download{display:block; width:100%; padding:12px; border:none; border-radius:6px; background:var(--amber); color:#fff; font-weight:700; font-size:14px; letter-spacing:.03em; text-transform:uppercase; text-align:center; text-decoration:none;}
+.img-modal-download:hover{filter:brightness(1.08);}
+
 .leader-row{display:flex; align-items:center; gap:12px; padding:10px 18px; border-bottom:1px solid var(--border-soft);}
 .leader-row:last-child{border-bottom:none;}
 .leader-pos{font-family:'IBM Plex Mono',monospace; color:var(--text-mute); width:22px;}
@@ -973,6 +985,7 @@ function viewProgramacaoDia(){
         <button class="btn-sm" onclick="shiftProgramacaoDia(-1)">‹</button>
         <input type="date" class="mini-input" id="prog-date" value="${dataSel}" onchange="setProgramacaoData(this.value)" onclick="openPicker(this)">
         <button class="btn-sm" onclick="shiftProgramacaoDia(1)">›</button>
+        <button class="btn-sm" onclick="gerarImagemProgramacao()">🖼 Gerar imagem</button>
       </div>
     </div>
     <div class="panel-box">
@@ -985,6 +998,231 @@ function viewProgramacaoDia(){
     </div>
     <div class="notice">O Check-list diário é gerado automaticamente para quem não está de folga — não depende de distribuição manual.</div>
   `;
+}
+
+/* ---------- GERAR IMAGEM DA PROGRAMAÇÃO (canvas) ---------- */
+// Réplica do template padrão usado no gerador Python (build_schedule.py):
+// banda de logo/título, cabeçalho de colunas, e por turno um divisor + uma
+// linha por colaborador (tarefas reais, "Check - list" ou "FOLGA").
+const IMG_COLORS = {
+  titleBand: '#F0A878',
+  headerBg: '#E97132',
+  rowDark: '#F6C7AB',
+  rowLight: '#FCE2D5',
+  white: '#FFFFFF',
+  black: '#000000',
+  border: '#BFBFBF',
+  logoOrange: '#E97132'
+};
+
+function buildImagemTurnos(dataSel){
+  const tarefasDoDia = tasks.filter(t=>t.scheduledDate===dataSel);
+  return TURNOS.map((turno, idx)=>{
+    const colabs = users.filter(u=>u.turno===turno);
+    const rows = [];
+    colabs.forEach(u=>{
+      const nome = u.nome.trim().split(/\s+/)[0];
+      if(isFolga(u.matricula, dataSel)){
+        rows.push({nomes:[nome], os:'', descricao:'FOLGA'});
+        return;
+      }
+      tarefasDoDia.filter(t=>t.matricula===u.matricula && !t.isChecklist).forEach(t=>{
+        rows.push({nomes:[nome], os:t.os?String(t.os):'', descricao:t.descricao});
+      });
+      // Check-list é pré-programado pra todo mundo sem folga, independente de já existir no banco.
+      rows.push({nomes:[nome], os:'', descricao:'Check - list'});
+    });
+    return {nome:'TURNO '+turno, withColumns: idx>0, rows};
+  });
+}
+
+function wrapCanvasText(ctx, text, maxWidth){
+  if(!text) return [''];
+  const words = String(text).split(' ');
+  const lines = [];
+  let line = '';
+  words.forEach(word=>{
+    const test = line ? line+' '+word : word;
+    if(line && ctx.measureText(test).width > maxWidth){
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  });
+  if(line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+
+async function renderProgramacaoCanvas(dataSel){
+  if(document.fonts && document.fonts.ready) await document.fonts.ready;
+
+  // Largura final FIXA em 463px (padroniza a visualização em celular), fonte
+  // monoespaçada compacta e linhas enxutas — mesmos parâmetros do gerador
+  // Python de referência. Desenha em resolução maior (SUPERSAMPLE) e depois
+  // reamostra para 463px de largura, pra manter o texto nítido mesmo pequeno.
+  const SUPERSAMPLE = 3;
+  const W = 463;
+  const COL_W = [Math.round(W*12/52), Math.round(W*6/52), 0];
+  COL_W[2] = W - COL_W[0] - COL_W[1];
+
+  const FONT_BODY = 9.5, LINE_H = 11.5, PAD_X = 4;
+  const ROW_LOGO1_H = 18, ROW_LOGO2_H = 13, ROW_HEADER_H = 15, ROW_DIVIDER_H = 15, ROW_MIN_H = 14;
+  const BODY_FONT = "'IBM Plex Mono', monospace";
+  const DISPLAY_FONT = "'Rajdhani', sans-serif";
+
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = `${FONT_BODY}px ${BODY_FONT}`;
+
+  const turnos = buildImagemTurnos(dataSel);
+  const drawRows = [];
+  turnos.forEach(t=>{
+    drawRows.push({type:'divider', nome:t.nome, withColumns:t.withColumns});
+    t.rows.forEach(r=>{
+      const dl = wrapCanvasText(mctx, r.descricao, COL_W[2]-PAD_X*2);
+      const nLines = Math.max(dl.length, r.nomes.length);
+      const h = Math.max(ROW_MIN_H, nLines*LINE_H + 3);
+      drawRows.push({type:'data', row:r, descLinesArr:dl, height:h});
+    });
+  });
+
+  const totalDataH = drawRows.reduce((s,r)=> s + (r.type==='data' ? r.height : ROW_DIVIDER_H), 0);
+  const totalH = ROW_LOGO1_H + ROW_LOGO2_H + ROW_HEADER_H + totalDataH;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W*SUPERSAMPLE;
+  canvas.height = totalH*SUPERSAMPLE;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(SUPERSAMPLE, SUPERSAMPLE);
+  ctx.textBaseline = 'middle';
+
+  function cellBorder(x,y,w,h){
+    ctx.strokeStyle = IMG_COLORS.border;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+  }
+  function fillRect(x,y,w,h,color){ ctx.fillStyle = color; ctx.fillRect(x,y,w,h); }
+  function setFont(opts){
+    ctx.font = `${opts.bold?'bold ':''}${opts.size||FONT_BODY}px ${opts.font||BODY_FONT}`;
+    ctx.fillStyle = opts.color || IMG_COLORS.black;
+    ctx.textAlign = opts.align || 'left';
+  }
+  function drawText(text, x, y, w, h, opts){
+    opts = opts||{};
+    setFont(opts);
+    const tx = opts.align==='center' ? x+w/2 : x+PAD_X;
+    ctx.fillText(text, tx, y+h/2);
+  }
+  function drawMultiline(lines, x, y, w, h, opts){
+    opts = opts||{};
+    const lh = opts.lineHeight || LINE_H;
+    setFont(opts);
+    const tx = opts.align==='center' ? x+w/2 : x+PAD_X;
+    let ty = y + h/2 - (lines.length*lh)/2 + lh/2;
+    lines.forEach(l=>{ ctx.fillText(l, tx, ty); ty += lh; });
+  }
+
+  // banda de logo + título institucional
+  fillRect(0,0, COL_W[0], ROW_LOGO1_H+ROW_LOGO2_H, IMG_COLORS.white);
+  drawMultiline(['RRP','energia'], 0, 0, COL_W[0], ROW_LOGO1_H+ROW_LOGO2_H,
+    {align:'center', color:IMG_COLORS.logoOrange, bold:true, size:11, font:DISPLAY_FONT, lineHeight:11.5});
+  cellBorder(0,0,COL_W[0], ROW_LOGO1_H+ROW_LOGO2_H);
+
+  const bx = COL_W[0], bw = COL_W[1]+COL_W[2];
+  fillRect(bx, 0, bw, ROW_LOGO1_H, IMG_COLORS.titleBand);
+  drawText('Manutenção Elétrica, Instrumentação, Automação', bx, 0, bw, ROW_LOGO1_H, {align:'center', size:7.6});
+  cellBorder(bx, 0, bw, ROW_LOGO1_H);
+
+  fillRect(bx, ROW_LOGO1_H, bw, ROW_LOGO2_H, IMG_COLORS.titleBand);
+  drawText(`Programação do dia    ${fmtDate(dataSel)}`, bx, ROW_LOGO1_H, bw, ROW_LOGO2_H, {align:'center', size:8, bold:true});
+  cellBorder(bx, ROW_LOGO1_H, bw, ROW_LOGO2_H);
+
+  let y = ROW_LOGO1_H + ROW_LOGO2_H;
+
+  // cabeçalho de colunas
+  const headers = ['TURNO','OS','DESCRIÇÃO'];
+  let x = 0;
+  headers.forEach((h,i)=>{
+    fillRect(x, y, COL_W[i], ROW_HEADER_H, IMG_COLORS.headerBg);
+    drawText(h, x, y, COL_W[i], ROW_HEADER_H, {align:'center', color:IMG_COLORS.white, bold:true});
+    cellBorder(x, y, COL_W[i], ROW_HEADER_H);
+    x += COL_W[i];
+  });
+  y += ROW_HEADER_H;
+
+  let rowToggle = 0;
+  drawRows.forEach(dr=>{
+    if(dr.type==='divider'){
+      const vals = dr.withColumns ? [dr.nome, 'OS', 'DESCRIÇÃO'] : [dr.nome, '', ''];
+      let x2 = 0;
+      vals.forEach((v,i)=>{
+        fillRect(x2, y, COL_W[i], ROW_DIVIDER_H, IMG_COLORS.titleBand);
+        drawText(v, x2, y, COL_W[i], ROW_DIVIDER_H, {align: i===0?'left':'center', bold:true});
+        cellBorder(x2, y, COL_W[i], ROW_DIVIDER_H);
+        x2 += COL_W[i];
+      });
+      y += ROW_DIVIDER_H;
+      return;
+    }
+    const color = rowToggle % 2 === 0 ? IMG_COLORS.rowDark : IMG_COLORS.rowLight;
+    rowToggle++;
+    const r = dr.row, h = dr.height;
+    let x3 = 0;
+    fillRect(x3, y, COL_W[0], h, color);
+    drawMultiline(r.nomes, x3, y, COL_W[0], h, {});
+    cellBorder(x3, y, COL_W[0], h);
+    x3 += COL_W[0];
+    fillRect(x3, y, COL_W[1], h, color);
+    drawText(r.os, x3, y, COL_W[1], h, {align:'center'});
+    cellBorder(x3, y, COL_W[1], h);
+    x3 += COL_W[1];
+    fillRect(x3, y, COL_W[2], h, color);
+    drawMultiline(dr.descLinesArr, x3, y, COL_W[2], h, {});
+    cellBorder(x3, y, COL_W[2], h);
+    y += h;
+  });
+
+  // reamostra do canvas em alta resolução para a largura final fixa de 463px
+  // (equivalente ao render 300dpi -> crop -> resize LANCZOS do gerador Python)
+  const final = document.createElement('canvas');
+  final.width = W;
+  final.height = Math.round(totalH);
+  const fctx = final.getContext('2d');
+  fctx.imageSmoothingEnabled = true;
+  fctx.imageSmoothingQuality = 'high';
+  fctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, final.width, final.height);
+  return final;
+}
+
+async function gerarImagemProgramacao(){
+  const dataSel = programacaoData || hojeISO;
+  try{
+    const canvas = await renderProgramacaoCanvas(dataSel);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    abrirModalImagem(dataUrl, `programacao_${dataSel}.jpg`);
+  } catch(e){
+    console.error(e);
+    toast('Não foi possível gerar a imagem.', false);
+  }
+}
+
+function abrirModalImagem(dataUrl, filename){
+  const existente = document.querySelector('.img-modal-backdrop');
+  if(existente) existente.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'img-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="img-modal">
+      <div class="img-modal-head">
+        <b>Programação do dia</b>
+        <button class="img-modal-close" onclick="this.closest('.img-modal-backdrop').remove()" title="Fechar">✕</button>
+      </div>
+      <div class="img-modal-body"><img src="${dataUrl}" alt="Imagem da programação do dia"></div>
+      <div class="img-modal-foot"><a class="btn-primary img-modal-download" href="${dataUrl}" download="${filename}">Baixar imagem</a></div>
+    </div>`;
+  wrap.addEventListener('click', (e)=>{ if(e.target===wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
 }
 
 /* ---------- ADMIN: NOVA ATIVIDADE ---------- */
