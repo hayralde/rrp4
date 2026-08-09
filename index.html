@@ -130,6 +130,13 @@ button{font-family:'Inter',sans-serif; cursor:pointer;}
 .version-tag{text-align:center; margin-top:8px; font-size:10px; color:var(--text-mute);}
 
 .main{flex:1; padding:26px 32px 60px; min-width:0;}
+.main-header{display:flex; align-items:center; margin-bottom:16px;}
+.topbar-logout{
+  margin-left:auto; display:flex; align-items:center; gap:6px;
+  padding:8px 14px; border-radius:20px; border:1px solid var(--border);
+  background:var(--panel); color:var(--text-dim); font-size:12.5px; font-weight:600;
+}
+.topbar-logout:hover{color:var(--red); border-color:var(--red); background:rgba(209,74,59,.08);}
 .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:10px;}
 .topbar h2{margin:0; font-size:24px;}
 .topbar .badge-today{font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; border:1px solid var(--border); padding:5px 10px; border-radius:20px;}
@@ -160,6 +167,7 @@ tr:hover td{background:rgba(0,0,0,.02);}
 .status-pill{display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;}
 .status-pendente{background:rgba(91,107,115,.14); color:var(--text-dim);}
 .status-atribuida{background:rgba(28,127,163,.14); color:var(--cyan);}
+.status-aguardando_aprovacao{background:rgba(201,122,24,.14); color:var(--amber);}
 .status-concluida{background:rgba(30,154,93,.14); color:var(--green);}
 .status-atrasada{background:repeating-linear-gradient(135deg, rgba(209,74,59,.16) 0 6px, rgba(209,74,59,.05) 6px 12px); color:var(--red);}
 
@@ -274,41 +282,77 @@ tr.checklist-preview{opacity:.7;}
   .sidebar{position:fixed; z-index:30; height:100%; width:240px; transform:translateX(-100%); transition:.2s; box-shadow:8px 0 24px rgba(28,38,43,.12);}
   .sidebar.open{transform:translateX(0);}
   .main{padding:16px 14px 50px;}
-  .menu-toggle{display:inline-flex !important; margin-bottom:14px;}
-  .topbar h2{font-size:20px;}
-  .topbar .badge-today{font-size:10.5px;}
+  .menu-toggle{display:inline-flex !important;}
+  .topbar h2{font-size:25px;}
+  .topbar .badge-today{font-size:13px;}
   .grid-stats{grid-template-columns:repeat(2,1fr); gap:10px;}
   .stat-card{padding:13px 14px;}
-  .stat-card .n{font-size:26px;}
+  .stat-card .n{font-size:33px;}
   .pb-head{padding:12px 14px; flex-direction:column; align-items:flex-start; gap:2px;}
   th, td{padding:9px 12px;}
   .desc-cell{max-width:220px;}
   .rank-row{flex-wrap:wrap;}
   .progress-bar{width:100%; max-width:220px;}
   .login-card{padding:24px 20px 22px;}
-  .login-brand h1{font-size:19px;}
+  .login-brand h1{font-size:24px;}
   .sidebar-head{padding-bottom:12px; margin-bottom:10px;}
   .profile-card{padding:8px 9px;}
-  .profile-avatar{width:30px; height:30px; font-size:13px;}
-  .profile-info b{font-size:12.5px;}
-  .profile-info span{font-size:10.5px;}
+  .profile-avatar{width:30px; height:30px; font-size:16px;}
+  .profile-info b{font-size:16px;}
+  .profile-info span{font-size:13px;}
   .month-tabs{gap:5px;}
-  .month-tab{padding:6px 11px; font-size:11px;}
+  .month-tab{padding:6px 11px; font-size:14px;}
   .task-card{padding:13px 14px;}
-  .tc-meta{gap:10px; font-size:11px;}
+  .tc-meta{gap:10px; font-size:14px;}
   .assign-row, .mini-input, .mini-select{width:100%;}
   .mini-desempenho{padding:10px 12px; gap:10px; margin-bottom:14px;}
-  .hex-sm{width:32px; height:32px; font-size:13px;}
-  .mini-desempenho-top b{font-size:13px;}
-  .mini-desempenho-top span{font-size:12px;}
-  .mini-desempenho-stats{gap:9px; font-size:10.5px;}
+  .hex-sm{width:32px; height:32px; font-size:16px;}
+  .mini-desempenho-top b{font-size:16px;}
+  .mini-desempenho-top span{font-size:15px;}
+  .mini-desempenho-stats{gap:9px; font-size:13px;}
 
   /* alvos de toque maiores */
   .profile-logout{width:38px; height:38px;}
-  .menu-toggle{width:44px; height:44px; font-size:18px;}
-  .btn-sm{padding:10px 15px; font-size:12.5px; min-height:38px;}
-  .nav-item{padding:12px 12px; font-size:14px;}
+  .menu-toggle{width:44px; height:44px; font-size:23px;}
+  .btn-sm{padding:10px 15px; font-size:16px; min-height:38px;}
+  .nav-item{padding:12px 12px; font-size:18px;}
   .assign-row .btn-sm{width:100%;}
+  .topbar-logout{padding:9px 15px; font-size:16px; min-height:38px;}
+
+  /* fontes ~25% maiores no mobile (itens sem override específico acima) */
+  .bolt{font-size:33px;}
+  .login-sub{font-size:16px;}
+  .tab-btn{font-size:16px;}
+  .field label{font-size:15px;}
+  .field input, .field select{font-size:18px;}
+  .btn-primary{font-size:18px;}
+  .login-error{font-size:16px;}
+  .login-hint{font-size:14px;}
+  .sidebar-brand .bolt{font-size:25px;}
+  .sidebar-brand span{font-size:19px;}
+  .version-tag{font-size:13px;}
+  .stat-card .l{font-size:14px;}
+  .panel-box .pb-head h3{font-size:20px;}
+  .panel-box .pb-head p{font-size:15px;}
+  table{font-size:16px;}
+  th{font-size:14px;}
+  .os-tag{font-size:15px;}
+  .status-pill{font-size:14px;}
+  .mini-select, .mini-input{font-size:16px;}
+  .field-row label{font-size:15px;}
+  .empty-state{font-size:16px;}
+  .hex{font-size:23px;}
+  .rank-info b{font-size:25px;}
+  .rank-info span{font-size:15px;}
+  .task-card .tc-desc{font-size:18px;}
+  .cal-table td.name-c{font-size:16px;}
+  .toast{font-size:16px;}
+  .leader-name{font-size:17px;}
+  .notice{font-size:16px;}
+  .prog-banner-brand .bolt{font-size:35px;}
+  .prog-banner-brand b{font-size:19px;}
+  .prog-banner-brand span{font-size:16px;}
+  tr.turno-divider td{font-size:18px;}
 
   /* segundo plano fixo pode travar o scroll em Safari mobile */
   body{background-attachment:scroll;}
@@ -322,7 +366,7 @@ tr.checklist-preview{opacity:.7;}
   .stack-table td{display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:right; border-bottom:1px solid var(--border-soft); padding:9px 14px;}
   .stack-table tr td:last-child{border-bottom:none;}
   .stack-table td[data-label]::before{
-    content:attr(data-label); text-align:left; font-size:10.5px; font-weight:600; color:var(--text-mute);
+    content:attr(data-label); text-align:left; font-size:13px; font-weight:600; color:var(--text-mute);
     text-transform:uppercase; letter-spacing:.04em; flex-shrink:0;
   }
   .stack-table td[colspan]{display:block; text-align:center; padding:12px 14px;}
@@ -333,13 +377,13 @@ tr.checklist-preview{opacity:.7;}
   .stack-table td.desc-cell::before{display:block; margin-bottom:5px;}
 
   /* --------- escala de folga: mantém grade, mas com coluna de nome fixa --------- */
-  .cal-table th, .cal-table td{padding:6px 5px; font-size:10px; min-width:26px;}
+  .cal-table th, .cal-table td{padding:6px 5px; font-size:13px; min-width:32px;}
   .cal-table td.name-c, .cal-table th:first-child{
     position:sticky; left:0; z-index:2; background:var(--panel);
     box-shadow:2px 0 4px rgba(28,38,43,.06);
   }
   .cal-table td.name-c{padding-right:10px;}
-  .cal-scroll-hint{display:block; font-size:11px; color:var(--text-mute); padding:8px 14px 0; text-align:right;}
+  .cal-scroll-hint{display:block; font-size:14px; color:var(--text-mute); padding:8px 14px 0; text-align:right;}
 }
 .sidebar-backdrop{display:none;}
 @media(max-width:820px){
@@ -405,7 +449,13 @@ tr.checklist-preview{opacity:.7;}
     </div>
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
     <div class="main">
-      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="main-header">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <button class="topbar-logout" onclick="doLogout()" title="Sair">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          <span>Sair</span>
+        </button>
+      </div>
       <div id="view-root"></div>
     </div>
   </div>
@@ -451,6 +501,7 @@ let session = null;       // {type:'admin', password} | {type:'colab', matricula
 let currentView = "overview";
 let stateLoaded = false;
 let programacaoData = null; // 'YYYY-MM-DD' selecionada na aba Programação do dia
+let colabTarefasFiltro = 'abertas'; // 'abertas' | 'aguardando' | 'concluidas'
 const TURNOS = ['A','B','C'];
 
 /* =========================================================
@@ -487,7 +538,7 @@ function addDays(dateStr, n){
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0');
 }
 function statusLabel(s){
-  return {pendente:'Pendente',atribuida:'Em andamento',concluida:'Concluída',atrasada:'Atrasada'}[s] || s;
+  return {pendente:'Pendente',atribuida:'Em andamento',aguardando_aprovacao:'Aguardando aprovação',concluida:'Concluída',atrasada:'Atrasada'}[s] || s;
 }
 function toast(msg, positive){
   const wrap = document.getElementById('toast-wrap');
@@ -586,6 +637,7 @@ function doLogout(){
 const NAV_ADMIN = [
   {id:'overview', label:'Painel', icon:'▣'},
   {id:'tarefas', label:'Tarefas', icon:'☰'},
+  {id:'aprovacoes', label:'Aprovações', icon:'✔'},
   {id:'programacao', label:'Programação do dia', icon:'▤'},
   {id:'nova-atividade', label:'Nova atividade', icon:'✚'},
   {id:'equipe', label:'Equipe', icon:'◈'},
@@ -640,6 +692,7 @@ function render(){
   if(session.type==='admin'){
     if(currentView==='overview') root.innerHTML = viewAdminOverview();
     else if(currentView==='tarefas') { root.innerHTML = viewAdminTarefas(); initTarefasSelects(); }
+    else if(currentView==='aprovacoes') root.innerHTML = viewAdminAprovacoes();
     else if(currentView==='programacao') root.innerHTML = viewProgramacaoDia();
     else if(currentView==='nova-atividade') root.innerHTML = viewAdminNovaAtividade();
     else if(currentView==='equipe') root.innerHTML = viewAdminEquipe();
@@ -655,6 +708,7 @@ function render(){
 function viewAdminOverview(){
   const pend = tasks.filter(t=>t.status==='pendente').length;
   const atrib = tasks.filter(t=>t.status==='atribuida').length;
+  const aguardando = tasks.filter(t=>t.status==='aguardando_aprovacao').length;
   const conc = tasks.filter(t=>t.status==='concluida').length;
   const atras = tasks.filter(t=>t.status==='atrasada').length;
   const top3 = [...users].sort((a,b)=>b.pontos-a.pontos).slice(0,3);
@@ -663,6 +717,7 @@ function viewAdminOverview(){
     <div class="grid-stats">
       <div class="stat-card"><div class="n">${pend}</div><div class="l">Tarefas pendentes</div></div>
       <div class="stat-card cyan"><div class="n">${atrib}</div><div class="l">Em andamento</div></div>
+      <div class="stat-card amber"><div class="n">${aguardando}</div><div class="l">Aguardando aprovação</div></div>
       <div class="stat-card green"><div class="n">${conc}</div><div class="l">Concluídas</div></div>
       <div class="stat-card red"><div class="n">${atras}</div><div class="l">Atrasadas</div></div>
     </div>
@@ -790,6 +845,47 @@ async function resetarDistribuicao(){
     await refreshAndRender();
   } catch(e){
     toast(e.message || 'Não foi possível resetar a distribuição.', false);
+  }
+}
+
+/* ---------- ADMIN: APROVAÇÕES ---------- */
+function viewAdminAprovacoes(){
+  const pendentesAprovacao = tasks.filter(t=>t.status==='aguardando_aprovacao');
+  return `
+    <div class="topbar"><h2>Aprovações</h2><span class="badge-today mono">Hoje: ${fmtToday()}</span></div>
+    <div class="panel-box">
+      <div class="pb-head"><div><h3>Tarefas aguardando aprovação</h3><p>${pendentesAprovacao.length} concluída(s) pelos colaboradores, aguardando revisão</p></div></div>
+      <div class="pb-body">
+        <table class="stack-table">
+          <thead><tr><th>Colaborador</th><th style="width:70px">OS</th><th>Descrição</th><th style="width:130px">Concluída em</th><th style="width:130px">Prazo</th><th style="width:110px"></th></tr></thead>
+          <tbody>
+          ${pendentesAprovacao.length===0 ? `<tr><td colspan="6"><div class="empty-state">Nenhuma tarefa aguardando aprovação.</div></td></tr>` :
+          pendentesAprovacao.map(t=>{
+            const u = userByMat(t.matricula);
+            const atrasada = t.completedDate && t.dueDate && t.completedDate > t.dueDate;
+            return `<tr>
+              <td data-label="Colaborador">${u ? firstName(u.nome) : '—'}</td>
+              <td class="os-tag" data-label="OS">${t.os ? '#'+t.os : '—'}</td>
+              <td class="desc-cell" data-label="Descrição">${t.descricao}</td>
+              <td class="mono" data-label="Concluída em">${fmtDate(t.completedDate)}</td>
+              <td data-label="Prazo"><span class="mono">${fmtDate(t.dueDate)}</span>${atrasada ? ' <span class="status-pill status-atrasada">Atrasada</span>' : ''}</td>
+              <td data-label=""><button class="btn-sm green" onclick="aprovarTarefa(${t.id})">Aprovar</button></td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+async function aprovarTarefa(taskId){
+  try{
+    const result = await apiPost(`/api/tasks/${taskId}/approve`, { adminPassword: session.password });
+    const u = userByMat(result.matricula);
+    toast(`Tarefa aprovada${u ? ' — '+firstName(u.nome) : ''} · +${result.pontosGanhos} pts`, true);
+    await refreshAndRender();
+  } catch(e){
+    toast(e.message || 'Não foi possível aprovar a tarefa.', false);
   }
 }
 
@@ -1016,16 +1112,22 @@ function miniDesempenho(u){
     </div>
   `;
 }
+function setColabFiltro(f){ colabTarefasFiltro = f; render(); }
 function viewColabTarefas(){
   const u = userByMat(session.matricula);
   const minhas = tasks.filter(t=>t.matricula===session.matricula);
-  const pendentesHoje = minhas.filter(t=>t.status==='atribuida'||t.status==='atrasada');
+  const abertas = minhas.filter(t=>t.status==='atribuida'||t.status==='atrasada');
+  const aguardando = minhas.filter(t=>t.status==='aguardando_aprovacao');
   const concluidas = minhas.filter(t=>t.status==='concluida');
-  return `
-    <div class="topbar"><h2>Minhas tarefas</h2><span class="badge-today mono">Hoje: ${fmtToday()}</span></div>
-    ${miniDesempenho(u)}
-    ${minhas.length===0 ? `<div class="notice">Você ainda não tem tarefas atribuídas. Assim que o administrador te programar, elas aparecem aqui.</div>` : ''}
-    ${pendentesHoje.map(t=>`
+  const FILTROS = [
+    {id:'abertas', label:'Abertas', list:abertas},
+    {id:'aguardando', label:'Aguardando aprovação', list:aguardando},
+    {id:'concluidas', label:'Concluídas', list:concluidas}
+  ];
+  const ativo = FILTROS.find(f=>f.id===colabTarefasFiltro) || FILTROS[0];
+
+  function renderCards(list, comBotao){
+    return list.map(t=>`
       <div class="task-card">
         <div class="tc-top">
           <span class="os-tag">${t.os ? '#'+t.os : 'Sem nº de OS'}</span>
@@ -1033,17 +1135,20 @@ function viewColabTarefas(){
         </div>
         <p class="tc-desc">${t.descricao}</p>
         <div class="tc-meta"><span>Programada: <b>${fmtDate(t.scheduledDate)}</b></span><span>Prazo final: <b>${fmtDate(t.dueDate)}</b></span></div>
-        <div class="tc-foot"><button class="btn-sm green" onclick="completeTask(${t.id})">Marcar como concluída</button></div>
+        <div class="tc-foot">${comBotao
+          ? `<button class="btn-sm green" onclick="completeTask(${t.id})">Marcar como concluída</button>`
+          : `<span style="font-size:12px; color:var(--text-dim);">Aguardando revisão do administrador.</span>`}</div>
       </div>
-    `).join('')}
-    ${concluidas.length ? `
-      <div class="panel-box" style="margin-top:18px;">
-        <div class="pb-head"><div><h3>Concluídas</h3></div></div>
+    `).join('');
+  }
+  function renderConcluidasTable(list){
+    return `
+      <div class="panel-box">
         <div class="pb-body">
           <table class="stack-table">
             <thead><tr><th style="width:70px">OS</th><th>Descrição</th><th>Programada</th><th>Prazo</th><th>Concluída em</th></tr></thead>
             <tbody>
-            ${concluidas.map(t=>`<tr>
+            ${list.map(t=>`<tr>
               <td class="os-tag" data-label="OS">${t.os?'#'+t.os:'—'}</td>
               <td class="desc-cell" data-label="Descrição">${t.descricao}</td>
               <td class="mono" data-label="Programada">${fmtDate(t.scheduledDate)}</td>
@@ -1053,14 +1158,33 @@ function viewColabTarefas(){
             </tbody>
           </table>
         </div>
-      </div>` : ''}
+      </div>`;
+  }
+
+  let conteudo;
+  if(ativo.list.length===0){
+    conteudo = `<div class="empty-state">Nenhuma tarefa nesse filtro.</div>`;
+  } else if(ativo.id==='concluidas'){
+    conteudo = renderConcluidasTable(ativo.list);
+  } else {
+    conteudo = renderCards(ativo.list, ativo.id==='abertas');
+  }
+
+  return `
+    <div class="topbar"><h2>Minhas tarefas</h2><span class="badge-today mono">Hoje: ${fmtToday()}</span></div>
+    ${miniDesempenho(u)}
+    ${minhas.length===0 ? `<div class="notice">Você ainda não tem tarefas atribuídas. Assim que o administrador te programar, elas aparecem aqui.</div>` : `
+      <div class="month-tabs">
+        ${FILTROS.map(f=>`<button class="month-tab ${f.id===ativo.id?'active':''}" onclick="setColabFiltro('${f.id}')">${f.label} (${f.list.length})</button>`).join('')}
+      </div>
+      ${conteudo}
+    `}
   `;
 }
 async function completeTask(taskId){
   try{
-    const result = await apiPost(`/api/tasks/${taskId}/complete`, {matricula: session.matricula});
-    if(result.noPrazo){ toast('Tarefa concluída no prazo! +'+result.pontosGanhos+' pontos', true); }
-    else { toast('Concluída com atraso. +'+result.pontosGanhos+' pontos', true); }
+    await apiPost(`/api/tasks/${taskId}/complete`, {matricula: session.matricula});
+    toast('Enviada para aprovação do administrador. Os pontos são creditados após a aprovação.', true);
     await refreshAndRender();
     renderShell();
   } catch(e){
