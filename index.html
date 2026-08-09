@@ -206,10 +206,17 @@ input[type="date"]:hover{border-color:var(--amber);}
   font-family:'Rajdhani',sans-serif; font-weight:700; font-size:18px;
 }
 .hex-1{background:linear-gradient(145deg,#8896A0,#5C6B73); color:#F4F6F7;}
-.hex-2{background:linear-gradient(145deg,#4FA97A,#1E7A50); color:#F0FFF6;}
-.hex-3{background:linear-gradient(145deg,#3F9FC4,#1C6E8C); color:#EEFAFF;}
-.hex-4{background:linear-gradient(145deg,#E0A24A,#B87418); color:#FFF6E8;}
-.hex-5{background:linear-gradient(145deg,#F0C86A,#C9791A); color:#FFFBEF;}
+.hex-2{background:linear-gradient(145deg,#6FC08A,#3C9463); color:#F0FFF6;}
+.hex-3{background:linear-gradient(145deg,#4FA97A,#1E7A50); color:#F0FFF6;}
+.hex-4{background:linear-gradient(145deg,#2E8F62,#145C3B); color:#EFFFF6;}
+.hex-5{background:linear-gradient(145deg,#5FBBDD,#2D8CB0); color:#EEFAFF;}
+.hex-6{background:linear-gradient(145deg,#3F9FC4,#1C6E8C); color:#EEFAFF;}
+.hex-7{background:linear-gradient(145deg,#2A7996,#114F66); color:#EAFAFF;}
+.hex-8{background:linear-gradient(145deg,#EAB56E,#C88A32); color:#FFF6E8;}
+.hex-9{background:linear-gradient(145deg,#E0A24A,#B87418); color:#FFF6E8;}
+.hex-10{background:linear-gradient(145deg,#C9791A,#8F5410); color:#FFF6E8;}
+.hex-11{background:linear-gradient(145deg,#F0C86A,#C9791A); color:#FFFBEF;}
+.hex-12{background:linear-gradient(145deg,#FFD988,#B8791E); color:#3A2205;}
 
 .rank-row{display:flex; align-items:center; gap:16px;}
 .rank-info b{font-size:20px; font-family:'Rajdhani',sans-serif; display:block;}
@@ -482,12 +489,21 @@ const PONTOS = {
   concluidaAtrasada: 3,
   naoCumprida: -5
 };
+// Régua pensada para: cumprindo tudo no prazo, todo dia útil, por 3 meses
+// (~75 dias úteis x 20 pts/dia = 1500 pts) o colaborador chega a Diretor.
 const RANKS = [
-  {min:0,   label:"Aprendiz",          hex:"hex-1"},
-  {min:20,  label:"Eletricista Jr.",   hex:"hex-2"},
-  {min:50,  label:"Eletricista Pleno", hex:"hex-3"},
-  {min:100, label:"Eletricista Sênior",hex:"hex-4"},
-  {min:200, label:"Mestre Elétrico",   hex:"hex-5"}
+  {min:0,    label:"Jovem Aprendiz",       hex:"hex-1"},
+  {min:40,   label:"Eletricista Jr.",      hex:"hex-2"},
+  {min:90,   label:"Eletricista Pleno",    hex:"hex-3"},
+  {min:160,  label:"Eletricista Sênior",   hex:"hex-4"},
+  {min:250,  label:"Eletrotécnico Jr.",    hex:"hex-5"},
+  {min:360,  label:"Eletrotécnico Pleno",  hex:"hex-6"},
+  {min:500,  label:"Eletrotécnico Sênior", hex:"hex-7"},
+  {min:650,  label:"Líder",                hex:"hex-8"},
+  {min:820,  label:"Supervisor",           hex:"hex-9"},
+  {min:1010, label:"Coordenador",          hex:"hex-10"},
+  {min:1220, label:"Gerente",              hex:"hex-11"},
+  {min:1500, label:"Diretor",              hex:"hex-12"}
 ];
 
 /* =========================================================
