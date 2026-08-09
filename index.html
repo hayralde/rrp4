@@ -257,6 +257,7 @@ input[type="date"]:hover{border-color:var(--amber);}
 tr.turno-divider td{background:var(--panel-alt); font-weight:700; font-family:'Rajdhani',sans-serif; font-size:14px; letter-spacing:.04em; color:var(--amber); padding-top:10px; padding-bottom:10px; border-bottom:1px solid var(--border);}
 tr.checklist-row td{color:var(--text-dim);}
 tr.checklist-row .desc-cell{font-style:italic;}
+tr.checklist-preview{opacity:.7;}
 
 .mini-desempenho{display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:18px;}
 .hex-sm{width:38px; height:38px; font-size:15px;}
@@ -823,12 +824,23 @@ function viewProgramacaoDia(){
     });
     colabs.forEach(u=>{
       const cl = tarefasDoDia.find(t=>t.matricula===u.matricula && t.isChecklist);
+      const folga = isFolga(u.matricula, dataSel);
       if(cl){
         anyRow = true;
         bodyRows += `<tr class="checklist-row">
           <td data-label="Colaborador">${firstName(u.nome)}</td>
           <td class="os-tag" data-label="OS">—</td>
           <td class="desc-cell" data-label="Descrição">${cl.descricao} <span class="status-pill status-${cl.status}">${statusLabel(cl.status)}</span></td>
+          <td class="mono" data-label="Prazo">—</td>
+        </tr>`;
+      } else if(!folga){
+        // Ainda não existe como tarefa real no banco (só é criada no dia em que chega),
+        // mas o Check-list é pré-programado pra todo mundo sem folga — mostra como preview.
+        anyRow = true;
+        bodyRows += `<tr class="checklist-row checklist-preview">
+          <td data-label="Colaborador">${firstName(u.nome)}</td>
+          <td class="os-tag" data-label="OS">—</td>
+          <td class="desc-cell" data-label="Descrição">Check - list <span class="status-pill" style="background:rgba(91,107,115,.14); color:var(--text-dim);">PROGRAMADA</span></td>
           <td class="mono" data-label="Prazo">—</td>
         </tr>`;
       }
