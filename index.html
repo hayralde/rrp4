@@ -1057,15 +1057,14 @@ function wrapCanvasText(ctx, text, maxWidth){
 async function renderProgramacaoCanvas(dataSel){
   if(document.fonts && document.fonts.ready) await document.fonts.ready;
 
-  // Largura final FIXA em 463px (padroniza a visualização em celular), fonte
-  // monoespaçada compacta e linhas enxutas — mesmos parâmetros do gerador
-  // Python de referência. Desenha em resolução maior (SUPERSAMPLE) e depois
-  // reamostra para 463px de largura, pra manter o texto nítido mesmo pequeno.
+  // Largura final com teto de 463px (padroniza a visualização em celular), mas
+  // encolhe abaixo disso quando o conteúdo do dia não precisa de tudo isso —
+  // evita coluna DESCRIÇÃO larga e vazia em dias com poucas tarefas. Fonte
+  // monoespaçada compacta e linhas enxutas, igual ao gerador Python de
+  // referência. Desenha em resolução maior (SUPERSAMPLE) e depois reamostra
+  // pra largura final, pra manter o texto nítido mesmo pequeno.
   const SUPERSAMPLE = 3;
-  const W = 463;
-  const COL_W = [Math.round(W*12/52), Math.round(W*6/52), 0];
-  COL_W[2] = W - COL_W[0] - COL_W[1];
-
+  const MAX_W = 463, MIN_W = 320;
   const FONT_BODY = 9.5, LINE_H = 11.5, PAD_X = 4;
   const ROW_LOGO1_H = 18, ROW_LOGO2_H = 13, ROW_HEADER_H = 15, ROW_DIVIDER_H = 15, ROW_MIN_H = 14;
   const BODY_FONT = "'IBM Plex Mono', monospace";
@@ -1076,6 +1075,32 @@ async function renderProgramacaoCanvas(dataSel){
   mctx.font = `${FONT_BODY}px ${BODY_FONT}`;
 
   const turnos = buildImagemTurnos(dataSel);
+
+  // colunas TURNO e OS: só o necessário pro maior nome / código de OS do dia
+  let nameW = mctx.measureText('TURNO').width;
+  let osW = mctx.measureText('OS').width;
+  turnos.forEach(t=> t.rows.forEach(r=>{
+    r.nomes.forEach(n=> nameW = Math.max(nameW, mctx.measureText(n).width));
+    if(r.os) osW = Math.max(osW, mctx.measureText(r.os).width);
+  }));
+  const COL_W = [
+    Math.max(70, Math.round(nameW + PAD_X*2 + 4)),
+    Math.max(30, Math.round(osW + PAD_X*2 + 4)),
+    0
+  ];
+
+  // coluna DESCRIÇÃO: cabe a maior descrição do dia numa linha só até um teto;
+  // além disso, quebra normalmente. Nunca deixa a imagem passar de MAX_W nem
+  // ficar menor que MIN_W (pra banner/cabeçalho continuarem legíveis).
+  let descNatural = mctx.measureText('DESCRIÇÃO').width;
+  turnos.forEach(t=> t.rows.forEach(r=>{ descNatural = Math.max(descNatural, mctx.measureText(r.descricao).width); }));
+  descNatural += PAD_X*2 + 4;
+  const maxDescW = MAX_W - COL_W[0] - COL_W[1];
+  const minDescW = Math.max(120, MIN_W - COL_W[0] - COL_W[1]);
+  COL_W[2] = Math.max(minDescW, Math.min(maxDescW, Math.round(descNatural)));
+
+  const W = COL_W[0] + COL_W[1] + COL_W[2];
+
   const drawRows = [];
   turnos.forEach(t=>{
     drawRows.push({type:'divider', nome:t.nome, withColumns:t.withColumns});
