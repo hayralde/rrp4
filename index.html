@@ -771,6 +771,7 @@ async function doLogin(){
     renderShell();
     const vt = document.getElementById('version-tag'); if(vt) vt.textContent = APP_VERSION;
     startPolling();
+    connectRealtime();
   } catch(e){
     err.textContent = e.message || 'Não foi possível entrar. Tente novamente.';
     err.style.display='block';
@@ -780,6 +781,7 @@ async function doLogin(){
 }
 function doLogout(){
   stopPolling();
+  disconnectRealtime();
   session=null;
   document.getElementById('app-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -837,10 +839,28 @@ function toggleSidebar(force){
 }
 
 /* =========================================================
-   ATUALIZAÇÃO AUTOMÁTICA (polling)
+   TEMPO REAL (Server-Sent Events)
+   O backend avisa na hora quando alguém cria/atribui/conclui/aprova
+   uma tarefa. O polling abaixo continua ligado, só que mais espaçado,
+   como rede de segurança (ex.: se a conexão SSE cair e ainda não
+   tiver reconectado).
+========================================================= */
+let eventSource = null;
+function connectRealtime(){
+  disconnectRealtime();
+  if(!window.EventSource) return;
+  eventSource = new EventSource(API_BASE + '/api/events');
+  eventSource.onmessage = () => autoRefresh();
+}
+function disconnectRealtime(){
+  if(eventSource){ eventSource.close(); eventSource = null; }
+}
+
+/* =========================================================
+   ATUALIZAÇÃO AUTOMÁTICA (polling — rede de segurança)
 ========================================================= */
 let pollTimer = null;
-const POLL_MS = 15000;
+const POLL_MS = 45000;
 function startPolling(){
   stopPolling();
   pollTimer = setInterval(autoRefresh, POLL_MS);
