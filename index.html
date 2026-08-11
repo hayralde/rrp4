@@ -770,6 +770,7 @@ async function doLogin(){
     currentView = session.type==='admin' ? 'overview' : 'minhas-tarefas';
     renderShell();
     const vt = document.getElementById('version-tag'); if(vt) vt.textContent = APP_VERSION;
+    startPolling();
   } catch(e){
     err.textContent = e.message || 'Não foi possível entrar. Tente novamente.';
     err.style.display='block';
@@ -778,6 +779,7 @@ async function doLogin(){
   }
 }
 function doLogout(){
+  stopPolling();
   session=null;
   document.getElementById('app-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -833,6 +835,31 @@ function toggleSidebar(force){
   sb.classList.toggle('open', open);
   bd.classList.toggle('open', open);
 }
+
+/* =========================================================
+   ATUALIZAÇÃO AUTOMÁTICA (polling)
+========================================================= */
+let pollTimer = null;
+const POLL_MS = 15000;
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(autoRefresh, POLL_MS);
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+async function autoRefresh(){
+  if(!session) return;
+  const active = document.activeElement;
+  const viewRoot = document.getElementById('view-root');
+  const isEditing = active && viewRoot && viewRoot.contains(active) &&
+    ['INPUT','TEXTAREA','SELECT'].includes(active.tagName);
+  try{ await loadState(); } catch(e){ return; }
+  if(!isEditing) render();
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') autoRefresh();
+});
 
 /* =========================================================
    RENDER — router
