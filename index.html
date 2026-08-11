@@ -795,6 +795,7 @@ function doLogout(){
 const NAV_ADMIN = [
   {id:'overview', label:'Painel', icon:'▣'},
   {id:'tarefas', label:'Tarefas', icon:'☰'},
+  {id:'tarefas-andamento', label:'Tarefas em andamento', icon:'▧'},
   {id:'aprovacoes', label:'Aprovações', icon:'✔'},
   {id:'programacao', label:'Programação do dia', icon:'▤'},
   {id:'nova-atividade', label:'Nova atividade', icon:'✚'},
@@ -893,6 +894,7 @@ function render(){
   if(session.type==='admin'){
     if(currentView==='overview') root.innerHTML = viewAdminOverview();
     else if(currentView==='tarefas') { root.innerHTML = viewAdminTarefas(); initTarefasSelects(); }
+    else if(currentView==='tarefas-andamento') root.innerHTML = viewAdminTarefasAndamento();
     else if(currentView==='aprovacoes') root.innerHTML = viewAdminAprovacoes();
     else if(currentView==='programacao') root.innerHTML = viewProgramacaoDia();
     else if(currentView==='nova-atividade') root.innerHTML = viewAdminNovaAtividade();
@@ -940,7 +942,6 @@ function viewAdminOverview(){
 /* ---------- ADMIN: TAREFAS ---------- */
 function viewAdminTarefas(){
   const pendentes = tasks.filter(t=>t.status==='pendente');
-  const emAndamento = tasks.filter(t=>t.status!=='pendente');
   return `
     <div class="topbar">
       <h2>Tarefas</h2>
@@ -969,6 +970,17 @@ function viewAdminTarefas(){
           </tbody>
         </table>
       </div>
+    </div>
+  `;
+}
+
+/* ---------- ADMIN: TAREFAS EM ANDAMENTO ---------- */
+function viewAdminTarefasAndamento(){
+  const emAndamento = tasks.filter(t=>t.status!=='pendente');
+  return `
+    <div class="topbar">
+      <h2>Tarefas em andamento</h2>
+      <span class="badge-today mono">Hoje: ${fmtToday()}</span>
     </div>
 
     <div class="panel-box">
