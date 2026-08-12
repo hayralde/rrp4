@@ -638,6 +638,7 @@ let tasks = [];           // tarefas
 let folgas = {};          // { matricula: ["YYYY-MM-DD", ...] }
 let hojeISO = null;       // data de hoje, segundo o servidor
 let session = null;       // {type:'admin', password} | {type:'colab', matricula}
+const SESSION_KEY = 'eletrica_session';
 let currentView = "overview";
 let stateLoaded = false;
 let programacaoData = null; // 'YYYY-MM-DD' selecionada na aba Programação do dia
@@ -752,13 +753,8 @@ async function doLogin(){
     }
     err.style.display='none';
     await loadState();
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-screen').style.display='block';
-    currentView = session.type==='admin' ? 'overview' : 'minhas-tarefas';
-    renderShell();
-    const vt = document.getElementById('version-tag'); if(vt) vt.textContent = APP_VERSION;
-    startPolling();
-    connectRealtime();
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    enterApp();
   } catch(e){
     err.textContent = e.message || 'Não foi possível entrar. Tente novamente.';
     err.style.display='block';
@@ -766,9 +762,40 @@ async function doLogin(){
     btns.forEach(b=>b.disabled=false);
   }
 }
+function enterApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  currentView = session.type==='admin' ? 'overview' : 'minhas-tarefas';
+  renderShell();
+  const vt = document.getElementById('version-tag'); if(vt) vt.textContent = APP_VERSION;
+  startPolling();
+  connectRealtime();
+}
+// Tenta retomar a sessão salva no navegador (sobrevive a um refresh).
+// Admin: revalida a senha salva contra o servidor. Colaborador: só confirma
+// que a matrícula ainda existe. Sessão inválida/expirada é descartada.
+async function restoreSession(){
+  const saved = localStorage.getItem(SESSION_KEY);
+  if(!saved) return false;
+  let parsed;
+  try{ parsed = JSON.parse(saved); }catch(e){ parsed = null; }
+  if(parsed && parsed.type==='admin' && parsed.password){
+    try{
+      await apiPost('/api/admin/login', {password: parsed.password});
+      session = parsed;
+      return true;
+    }catch(e){ /* senha mudou ou expirou */ }
+  } else if(parsed && parsed.type==='colab' && parsed.matricula && userByMat(parsed.matricula)){
+    session = parsed;
+    return true;
+  }
+  localStorage.removeItem(SESSION_KEY);
+  return false;
+}
 function doLogout(){
   stopPolling();
   disconnectRealtime();
+  localStorage.removeItem(SESSION_KEY);
   session=null;
   document.getElementById('app-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -1728,6 +1755,7 @@ async function init(){
   try{
     await loadState();
     populateColabSelect();
+    if(await restoreSession()) enterApp();
   } catch(e){
     document.getElementById('login-error').textContent = 'Não foi possível conectar ao servidor. Verifique se a API está no ar.';
     document.getElementById('login-error').style.display = 'block';
