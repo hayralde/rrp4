@@ -656,6 +656,7 @@ let currentView = "overview";
 let stateLoaded = false;
 let programacaoData = null; // 'YYYY-MM-DD' selecionada na aba Programação do dia
 let colabTarefasFiltro = 'abertas'; // 'abertas' | 'aguardando' | 'concluidas'
+let tarefasAndamentoFiltro = ''; // '' = todos os responsáveis; senão, matrícula
 const TURNOS = ['A','B','C'];
 
 /* =========================================================
@@ -975,21 +976,35 @@ function viewAdminTarefas(){
 }
 
 /* ---------- ADMIN: TAREFAS EM ANDAMENTO ---------- */
+function setTarefasAndamentoFiltro(matricula){ tarefasAndamentoFiltro = matricula; render(); }
 function viewAdminTarefasAndamento(){
-  const emAndamento = tasks.filter(t=>t.status!=='pendente');
+  const todasAndamento = tasks.filter(t=>t.status!=='pendente');
+  const responsaveis = [...new Map(
+    todasAndamento.filter(t=>t.matricula).map(t=>[t.matricula, userByMat(t.matricula)])
+  ).values()].filter(Boolean).sort((a,b)=>firstName(a.nome).localeCompare(firstName(b.nome)));
+  if(tarefasAndamentoFiltro && !responsaveis.some(u=>u.matricula===tarefasAndamentoFiltro)) tarefasAndamentoFiltro = '';
+  const emAndamento = tarefasAndamentoFiltro
+    ? todasAndamento.filter(t=>t.matricula===tarefasAndamentoFiltro)
+    : todasAndamento;
   return `
     <div class="topbar">
       <h2>Tarefas em andamento</h2>
-      <span class="badge-today mono">Hoje: ${fmtToday()}</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <select class="mini-select" onchange="setTarefasAndamentoFiltro(this.value)">
+          <option value="">Todos os responsáveis</option>
+          ${responsaveis.map(u=>`<option value="${u.matricula}" ${u.matricula===tarefasAndamentoFiltro?'selected':''}>${firstName(u.nome)}</option>`).join('')}
+        </select>
+        <span class="badge-today mono">Hoje: ${fmtToday()}</span>
+      </div>
     </div>
 
     <div class="panel-box">
-      <div class="pb-head"><div><h3>Tarefas em andamento / concluídas</h3><p>${emAndamento.length} tarefas já distribuídas</p></div></div>
+      <div class="pb-head"><div><h3>Tarefas em andamento / concluídas</h3><p>${emAndamento.length} tarefas já distribuídas${tarefasAndamentoFiltro ? ' · filtrado por responsável' : ''}</p></div></div>
       <div class="pb-body">
         <table class="stack-table">
           <thead><tr><th style="width:70px">OS</th><th>Descrição</th><th>Responsável</th><th>Programada</th><th>Prazo</th><th>Status</th></tr></thead>
           <tbody>
-          ${emAndamento.length===0 ? `<tr><td colspan="6"><div class="empty-state">Nenhuma tarefa distribuída ainda.</div></td></tr>` :
+          ${emAndamento.length===0 ? `<tr><td colspan="6"><div class="empty-state">${tarefasAndamentoFiltro ? 'Nenhuma tarefa desse responsável.' : 'Nenhuma tarefa distribuída ainda.'}</div></td></tr>` :
           emAndamento.map(t=>{
             const u = userByMat(t.matricula);
             return `<tr>
